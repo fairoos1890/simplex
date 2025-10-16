@@ -32,6 +32,45 @@ activity.
 
    Use `--dry-run` to simply validate the configuration without making API calls.
 
+### Configuration reference
+
+The configuration file is written in YAML and supports the following keys:
+
+| Key | Description |
+| --- | ----------- |
+| `token.contract` | TRC20 contract address that you would like to monitor. |
+| `token.symbol` | Short symbol (e.g. `USDT`) that will be used in the CLI output. |
+| `token.decimals` | Number of decimals for the token (normally 6 for USDT). |
+| `staff` | List of wallet addresses to monitor. Each entry can include an optional `label` to print a friendly name next to the address. |
+| `lookback_hours` | How many hours of transfers to pull for each wallet. |
+| `high_value_threshold` | Transfers equal to or above this amount are highlighted as potentially suspicious. |
+| `uncommon_counterparty_threshold` | Counterparties seen fewer than this many times are reported as uncommon. |
+| `burst_window_minutes` | Width of the rolling window (in minutes) to use when checking for bursts of activity. |
+| `burst_threshold` | Number of transfers within the burst window that should trigger a burst alert. |
+
+See `config.sample.yaml` for a complete example.
+
+### Example usage
+
+Once configured, running the CLI prints a per-wallet summary. A typical output looks similar to the following:
+
+```
+$ python -m simplex config.yaml
+=== alice (TQx...abc) ===
+Inbound: 5 transfers / 1,250.0 USDT
+Outbound: 2 transfers / 300.0 USDT
+High value transfers:
+  2024-05-02 13:40:00Z 750.0 USDT from TAbc...
+Uncommon counterparties:
+  TDef... (seen 1 times)
+Linked staff wallets:
+  Shared with bob via counterparty Txyz...
+Burst activity:
+  3 transfers between 2024-05-02 14:00:00Z and 2024-05-02 14:10:00Z
+```
+
+Use the summary to spot unexpected activity or interactions between staff wallets.
+
 ## How it works
 
 * `simplex.client.TronScanClient` queries the public TronScan API for TRC20
