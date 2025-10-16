@@ -40,7 +40,10 @@ activity.
   finds high-value transfers, lists counterparties that have appeared less than
   the configured threshold, highlights other staff wallets that interact with
   the address, and flags bursts of activity within a moving time window.
-* The CLI prints a human-readable summary so you can easily spot anomalies.
+* `simplex.analysis.find_shared_counterparties` detects addresses that interact
+  with more than one staff wallet so that you can quickly spot linked accounts.
+* The CLI prints a human-readable summary so you can easily spot anomalies and
+  shared counterparties across your monitored addresses.
 
 ## Testing
 

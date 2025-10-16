@@ -24,6 +24,7 @@ class AddressSummary:
     uncommon_counterparties: List[str]
     linked_staff: List[str]
     burst_windows: List[str]
+    counterparty_counts: Dict[str, int]
 
 
 def analyse_transfers(
@@ -77,6 +78,7 @@ def analyse_transfers(
         uncommon_counterparties=sorted(uncommon_counterparties),
         linked_staff=sorted(linked_staff),
         burst_windows=burst_windows,
+        counterparty_counts=dict(counterparty_counter),
     )
 
 
@@ -98,4 +100,21 @@ def _detect_bursts(timestamps: Sequence[datetime], settings: MonitorSettings) ->
     return bursts
 
 
-__all__ = ["AddressSummary", "analyse_transfers"]
+def find_shared_counterparties(summaries: Sequence[AddressSummary]) -> Dict[str, List[str]]:
+    """Identify counterparties that interact with more than one staff wallet."""
+
+    seen: Dict[str, set[str]] = {}
+    for summary in summaries:
+        name = summary.staff.name or summary.staff.address
+        for counterparty in summary.counterparty_counts:
+            bucket = seen.setdefault(counterparty, set())
+            bucket.add(name)
+
+    shared: Dict[str, List[str]] = {}
+    for counterparty, names in seen.items():
+        if len(names) > 1:
+            shared[counterparty] = sorted(names)
+    return shared
+
+
+__all__ = ["AddressSummary", "analyse_transfers", "find_shared_counterparties"]

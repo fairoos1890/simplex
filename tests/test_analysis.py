@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from simplex.analysis import analyse_transfers
+from simplex.analysis import analyse_transfers, find_shared_counterparties
 from simplex.client import Transfer
 from simplex.config import MonitorSettings, StaffAccount
 
@@ -52,6 +52,7 @@ def test_analyse_transfers_flags_high_value_and_uncommon_counterparties():
     assert summary.high_value_transfers[0].amount == Decimal("600")
     assert "TCounter1" in summary.uncommon_counterparties
     assert "TBob" in summary.linked_staff
+    assert summary.counterparty_counts["TCounter1"] == 2
 
 
 def test_burst_detection_returns_window_when_threshold_met():
@@ -80,3 +81,41 @@ def test_burst_detection_returns_window_when_threshold_met():
 
     assert len(summary.burst_windows) == 1
     assert "(2 transfers)" in summary.burst_windows[0]
+
+
+def test_find_shared_counterparties_returns_addresses_seen_for_multiple_staff():
+    settings = MonitorSettings(
+        token_contract="contract",
+        token_symbol="USDT",
+        token_decimals=6,
+        staff=[
+            StaffAccount(name="Alice", address="TAlice"),
+            StaffAccount(name="Bob", address="TBob"),
+        ],
+    )
+
+    alice_transfers = [
+        make_transfer(0, sender="TAlice", recipient="TShared", amount="10"),
+        make_transfer(1, sender="TShared", recipient="TAlice", amount="5"),
+    ]
+    bob_transfers = [
+        make_transfer(0, sender="TBob", recipient="TShared", amount="3"),
+        make_transfer(2, sender="TBob", recipient="TOther", amount="2"),
+    ]
+
+    alice_summary = analyse_transfers(
+        alice_transfers,
+        staff=settings.staff[0],
+        all_staff_addresses=[member.address for member in settings.staff],
+        settings=settings,
+    )
+    bob_summary = analyse_transfers(
+        bob_transfers,
+        staff=settings.staff[1],
+        all_staff_addresses=[member.address for member in settings.staff],
+        settings=settings,
+    )
+
+    shared = find_shared_counterparties([alice_summary, bob_summary])
+
+    assert shared == {"TShared": ["Alice", "Bob"]}

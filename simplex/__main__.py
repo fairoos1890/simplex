@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from typing import List
 
-from .analysis import AddressSummary, analyse_transfers
+from .analysis import AddressSummary, analyse_transfers, find_shared_counterparties
 from .client import TronScanClient
 from .config import MonitorSettings, StaffAccount, load_settings
 
@@ -63,11 +63,19 @@ def main(argv: List[str] | None = None) -> int:
     client = TronScanClient(settings)
     staff_addresses = [member.address for member in settings.staff]
 
+    summaries: List[AddressSummary] = []
     for member in settings.staff:
         transfers = client.fetch_transfers(member)
         summary = analyse_transfers(transfers, staff=member, all_staff_addresses=staff_addresses, settings=settings)
+        summaries.append(summary)
         print(render_summary(summary))
         print("-" * 80)
+
+    shared = find_shared_counterparties(summaries)
+    if shared:
+        print("Shared counterparties across staff wallets:")
+        for counterparty, names in sorted(shared.items()):
+            print(f"  - {counterparty}: {', '.join(names)}")
 
     return 0
 
