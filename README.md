@@ -1,1 +1,94 @@
-# simplex
+# TRC20 Staff Monitor
+
+This repository provides a small command line helper that pulls recent TRC20 token
+transfers for your staff wallets and highlights potential red flags such as high
+value transfers, uncommon counterparties, links between staff wallets, and burst
+activity.
+
+## Getting started
+
+1. **Install dependencies**
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+2. **Create a configuration file**
+
+   Copy `config.sample.yaml` to `config.yaml` and edit it to include:
+
+   - the TRC20 token contract address, symbol, and decimals,
+   - a list of staff wallets (optionally labelled with names), and
+   - thresholds for what you consider unusual activity (for example the lookback
+     window, high value amount, and burst detection settings).
+
+3. **Run the monitor**
+
+   ```bash
+   python -m simplex config.yaml
+   ```
+
+   Use `--dry-run` to simply validate the configuration without making API calls.
+
+### Configuration reference
+
+The configuration file is written in YAML and supports the following keys:
+
+| Key | Description |
+| --- | ----------- |
+| `token.contract` | TRC20 contract address that you would like to monitor. |
+| `token.symbol` | Short symbol (e.g. `USDT`) that will be used in the CLI output. |
+| `token.decimals` | Number of decimals for the token (normally 6 for USDT). |
+| `staff` | List of wallet addresses to monitor. Each entry can include an optional `label` to print a friendly name next to the address. |
+| `lookback_hours` | How many hours of transfers to pull for each wallet. |
+| `high_value_threshold` | Transfers equal to or above this amount are highlighted as potentially suspicious. |
+| `uncommon_counterparty_threshold` | Counterparties seen fewer than this many times are reported as uncommon. |
+| `burst_window_minutes` | Width of the rolling window (in minutes) to use when checking for bursts of activity. |
+| `burst_threshold` | Number of transfers within the burst window that should trigger a burst alert. |
+
+See `config.sample.yaml` for a complete example.
+
+### Example usage
+
+Once configured, running the CLI prints a per-wallet summary. A typical output looks similar to the following:
+
+```
+$ python -m simplex config.yaml
+=== alice (TQx...abc) ===
+Inbound: 5 transfers / 1,250.0 USDT
+Outbound: 2 transfers / 300.0 USDT
+High value transfers:
+  2024-05-02 13:40:00Z 750.0 USDT from TAbc...
+Uncommon counterparties:
+  TDef... (seen 1 times)
+Linked staff wallets:
+  Shared with bob via counterparty Txyz...
+Burst activity:
+  3 transfers between 2024-05-02 14:00:00Z and 2024-05-02 14:10:00Z
+```
+
+Use the summary to spot unexpected activity or interactions between staff wallets.
+
+## How it works
+
+* `simplex.client.TronScanClient` queries the public TronScan API for TRC20
+  transfers involving each staff wallet.
+* `simplex.analysis.analyse_transfers` summarises inbound/outbound totals,
+  finds high-value transfers, lists counterparties that have appeared less than
+  the configured threshold, highlights other staff wallets that interact with
+  the address, and flags bursts of activity within a moving time window.
+* `simplex.analysis.find_shared_counterparties` detects addresses that interact
+  with more than one staff wallet so that you can quickly spot linked accounts.
+* The CLI prints a human-readable summary so you can easily spot anomalies and
+  shared counterparties across your monitored addresses.
+
+## Testing
+
+Install `pytest` and run the unit tests:
+
+```bash
+pip install pytest
+pytest
+```

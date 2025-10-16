@@ -1,0 +1,20 @@
+token:
+  contract: "TXYZ1234567890ABCDEF"  # Replace with the TRC20 token contract address
+  symbol: "USDT"
+  decimals: 6
+
+# List your staff wallets here. Names are optional but help readability.
+staff:
+  - name: "Alice"
+    address: "T...."
+  - name: "Bob"
+    address: "T...."
+
+# Optional tuning parameters
+total_history_days: 30         # Ignore transfers older than this number of days (set 0 to disable)
+high_value_threshold: 1000  # Highlight transfers >= this amount
+burst_transfer_threshold: 5  # Number of transfers inside the burst window to flag
+burst_window_hours: 24       # Size of the burst window in hours
+uncommon_counterparty_threshold: 1  # Appearances <= this count will be listed
+pages: 2                     # How many pages to fetch from the API per wallet
+page_size: 50                # Page size for each API request
